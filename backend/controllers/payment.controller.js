@@ -8,6 +8,7 @@ dotenv.config();
 
 const ipnurl = process.env.PESAPAL_DEMO_URL;
 const url = process.env.PESAPAL_AUTH_URL;
+const callbackurl = `https://ecommerce-vtt3.onrender.com//api/payment/pesapal-callback?orderRef=${orderRef}`;
 
 
 export const createPesapalPaymentSession = async (req, res) => {
@@ -44,7 +45,7 @@ export const createPesapalPaymentSession = async (req, res) => {
 			  Accept: "application/json",
 			};
 			const body = {
-			  url: `https://ecommerce-vtt3.onrender.com//api/payment/pesapal-callback?orderRef=${orderRef}`,
+			  url: callbackurl,
 			  ipn_notification_type: "POST",
 			};
 			const response = await axios.post(ipnurl, body, { headers });
