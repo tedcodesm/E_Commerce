@@ -33,7 +33,7 @@ export const createPesapalPaymentSession = async (req, res) => {
 		}
 
 		const orderRef = crypto.randomUUID();
-		const callbackurl = `${process.env.CLIENT_URL}/api/payment/pesapal-callback?orderRef=${orderRef}`;
+		const callbackurl = `http://localhost:5002/api/payment/pesapal-callback?orderRef=${orderRef}`;
 
 		const registerIPN = async (accessToken) => {
 			const headers = {
