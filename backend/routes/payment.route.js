@@ -9,7 +9,7 @@ router.use(express.urlencoded({extended:true}));
 
 // router.post("/create-checkout-session",protectRoute,createCheckoutSession)
 // router.post("/checkout-success",protectRoute,checkoutSuccess)
-router.post("/create-pesapal-session", createPesapalPaymentSession);
+router.post("/create-pesapal-session", protectRoute, createPesapalPaymentSession);
 router.get("/pesapal-callback", handlePesapalCallback);
 
 
