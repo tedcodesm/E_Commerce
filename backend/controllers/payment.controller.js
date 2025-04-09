@@ -31,46 +31,34 @@ export const createPesapalPaymentSession = async (req, res) => {
 			}
 		}
 
-		const accessToken = await getAccessToken();
 		const orderRef = crypto.randomUUID();
 		const callbackurl = `https://ecommerce-vtt3.onrender.com/api/payment/pesapal-callback?orderRef=${orderRef}`;
 
-
-
 		const registerIPN = async (accessToken) => {
-			//   const accessToken = await getToken();
-			//   try {
 			const headers = {
-			  Authorization: `Bearer ${accessToken}`,
-			  "Content-Type": "application/json",
-			  Accept: "application/json",
+				Authorization: `Bearer ${accessToken}`,
+				"Content-Type": "application/json",
+				Accept: "application/json",
 			};
 			const body = {
-			  url: callbackurl,
-			  ipn_notification_type: "POST",
+				url: callbackurl,
+				ipn_notification_type: "POST",
 			};
 			const response = await axios.post(ipnurl, body, { headers });
 			console.log("IPN registered successfully", response.data);
-		  
-			//   const createddata = response.data.created_date;
-			const ipn_id = response.data.ipn_id;
-		  
-			//   const status = response.data.status;
-			await getIpnLists(accessToken);
-			return ipn_id;
-			//   } catch (error) {
-			//     console.log("error occurred while registering IPN", error);
-			//   }
-		  };
+			return response.data.ipn_id;
+		};
 
+		const accessToken = await getAccessToken();
+		const myipn_id = await registerIPN(accessToken);
 
-		const requestBody = {
+		const body = {
 			id: orderRef,
 			currency: "KES",
 			amount: totalAmount.toFixed(2),
 			description: "Order payment",
-			callback_url: `https://ecommerce-vtt3.onrender.com//api/payment/pesapal-callback?orderRef=${orderRef}`,
-			notification_id: myipn_id, // Optional
+			callback_url: callbackurl,
+			notification_id: myipn_id,
 			billing_address: {
 				email_address: req.user.email,
 				phone_number: req.user.phone || "0700000000",
@@ -79,92 +67,34 @@ export const createPesapalPaymentSession = async (req, res) => {
 			},
 		};
 
-		console.log(requestBody);
-    
-
-		try {
-			// Ensure you have the access token
-			const accessToken = await getAccessToken();
-			//   console.log("token",accessToken)
-			//   await registerIPN(accessToken);
-			const myipn_id = await registerIPN(accessToken);
-			//   console.log('generated',myipn_id)
-			//   return
-		
-			// Define the endpoint URL for order submission
-			const orderUrl =
-			  "https://cybqa.pesapal.com/pesapalv3/api/Transactions/SubmitOrderRequest";
-		
-			// Set up the headers
-			const headers = {
-			  Authorization: `Bearer ${accessToken}`,
-			  "Content-Type": "application/json",
-			  Accept: "application/json",
-			};
-		
-			console.log("callbackurl",callbackurl);
-			const callbackWithUserId = `${callbackurl}`;
-		
-			// Prepare the body with order details
-			const body = {
-			  // Populate these fields with actual data from your application
-			  id: requestBody.id, // Unique identifier for the transaction
-			  currency: requestBody.currency, // e.g., "KES"
-			  amount: requestBody.amount, // e.g., "1000.00"
-			  description: requestBody.description, // e.g., "Order payment"
-			  callback_url: callbackWithUserId, // Callback URL for notifications
-			  notification_id: myipn_id,
-			  billing_address: {
-				email_address: req.user.email,
-				phone_number: req.user.phone || "0700000000",
-				first_name: req.user.name?.split(" ")[0] || "Customer",
-				last_name: req.user.name?.split(" ")[1] || " ",
-			},
-			};
-		
-			// Send the POST request
-			const response = await axios.post(orderUrl, body, { headers });
-		
-			// Log the response data
-			console.log("Order submitted successfully", response.data);
-			// res.json(response.data);
-			console.log("redirect url", response.data.redirect_url);
-			// return response.data;
-			const paymentresponse = response.data;
-			io.to(receiverId).emit("payment-started",paymentresponse);
-			return res.status(200).json(response.data);
-		  } catch (error) {
-			console.log("Error occurred while submitting order", error);
-		  };
-
-
+		const headers = {
+			Authorization: `Bearer ${accessToken}`,
+			"Content-Type": "application/json",
+			Accept: "application/json",
+		};
 
 		const response = await axios.post(
-			"https://pay.pesapal.com/v3/api/Transactions/SubmitOrderRequest",
-			requestBody,
-			{
-				headers: {
-					Authorization: `Bearer ${accessToken}`,
-					"Content-Type": "application/json",
-				},
-			}
+			"https://cybqa.pesapal.com/pesapalv3/api/Transactions/SubmitOrderRequest",
+			body,
+			{ headers }
 		);
 
-		const redirectUrl = response.data.redirect_url;
+		console.log("PesaPal Order Submitted:", response.data);
 
 		if (totalAmount >= 20000) {
 			await createNewCoupon(req.user._id);
 		}
 
-		// Optional: Save temporary order metadata
-		// e.g. save to DB with status = pending
-
-		res.status(200).json({ redirectUrl });
+		return res.status(200).json({
+			redirectUrl: response.data.redirect_url,
+			orderTrackingId: response.data.order_tracking_id,
+		});
 	} catch (error) {
 		console.error("PesaPal Payment Error:", error.response?.data || error.message);
 		res.status(500).json({ message: "Failed to initiate PesaPal payment", error: error.message });
 	}
 };
+
 export const handlePesapalCallback = async (req, res) => {
 	try {
 		const { orderTrackingId, orderRef } = req.query;
