@@ -2,12 +2,11 @@ import { motion } from "framer-motion";
 import { useCartStore } from "../stores/useCartStore";
 import { Link } from "react-router-dom";
 import { MoveRight } from "lucide-react";
-import { loadStripe } from "@stripe/stripe-js";
 import axios from "../lib/axios";
 
-const stripePromise = loadStripe(
-	"pk_test_51R4HNdBpcjk5U5z33vCHO9zcuHVD33tyMtUamb1m7CanetY59ohYBwn9fphIUr9wl4h5okLQUsqw6hS74iB4nZFe00sfiSUWC5"
-);
+// const stripePromise = loadStripe(
+// 	"pk_test_51R4HNdBpcjk5U5z33vCHO9zcuHVD33tyMtUamb1m7CanetY59ohYBwn9fphIUr9wl4h5okLQUsqw6hS74iB4nZFe00sfiSUWC5"
+// );
 
 const OrderSummary = () => {
 	const { total, subtotal, coupon, isCouponApplied, cart } = useCartStore();
@@ -17,22 +16,40 @@ const OrderSummary = () => {
 	const formattedTotal = total.toFixed(2);
 	const formattedSavings = savings.toFixed(2);
 
+	// const handlePayment = async () => {
+	// 	const stripe = await stripePromise;
+	// 	const res = await axios.post("/payments/create-checkout-session", {
+	// 		products: cart,
+	// 		couponCode: coupon ? coupon.code : null,
+	// 	});
+
+	// 	const session = res.data;
+	// 	const result = await stripe.redirectToCheckout({
+	// 		sessionId: session.id,
+	// 	});
+
+	// 	if (result.error) {
+	// 		console.error("Error:", result.error);
+	// 	}
+	// };
+
 	const handlePayment = async () => {
-		const stripe = await stripePromise;
-		const res = await axios.post("/payments/create-checkout-session", {
-			products: cart,
-			couponCode: coupon ? coupon.code : null,
-		});
-
-		const session = res.data;
-		const result = await stripe.redirectToCheckout({
-			sessionId: session.id,
-		});
-
-		if (result.error) {
-			console.error("Error:", result.error);
+		try {
+			const res = await axios.post("/payments/create-pesapal-session", {
+				products: cart,
+				couponCode: coupon ? coupon.code : null,
+			});
+	
+			const { redirectUrl } = res.data;
+	
+			// Redirect user to PesaPal payment page
+			window.location.href = redirectUrl;
+		} catch (error) {
+			console.error("PesaPal payment error:", error.message);
+			alert("Failed to initiate payment. Please try again.");
 		}
 	};
+	
 
 	return (
 		<motion.div
