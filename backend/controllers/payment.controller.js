@@ -11,6 +11,7 @@ const url = process.env.PESAPAL_AUTH_URL;
 
 
 export const createPesapalPaymentSession = async (req, res) => {
+	console.log("trying to do the payment")
 	try {
 		const { products, couponCode } = req.body;
 
