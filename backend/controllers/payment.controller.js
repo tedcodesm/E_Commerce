@@ -8,7 +8,6 @@ dotenv.config();
 
 const ipnurl = process.env.PESAPAL_DEMO_URL;
 const url = process.env.PESAPAL_AUTH_URL;
-const callbackurl = `https://ecommerce-vtt3.onrender.com//api/payment/pesapal-callback?orderRef=${orderRef}`;
 
 
 export const createPesapalPaymentSession = async (req, res) => {
@@ -34,6 +33,8 @@ export const createPesapalPaymentSession = async (req, res) => {
 
 		const accessToken = await getAccessToken();
 		const orderRef = crypto.randomUUID();
+		const callbackurl = `https://ecommerce-vtt3.onrender.com/api/payment/pesapal-callback?orderRef=${orderRef}`;
+
 
 
 		const registerIPN = async (accessToken) => {
@@ -102,7 +103,7 @@ export const createPesapalPaymentSession = async (req, res) => {
 			};
 		
 			console.log("callbackurl",callbackurl);
-			const callbackWithUserId = `${callbackurl}?userId=${userId}&planId=${planId}`;
+			const callbackWithUserId = `${callbackurl}`;
 		
 			// Prepare the body with order details
 			const body = {
