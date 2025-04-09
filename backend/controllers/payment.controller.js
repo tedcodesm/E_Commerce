@@ -44,7 +44,7 @@ export const createPesapalPaymentSession = async (req, res) => {
 			  Accept: "application/json",
 			};
 			const body = {
-			  url: `http://localhost:5173/api/payment/pesapal-callback?orderRef=${orderRef}`,
+			  url: `https://ecommerce-vtt3.onrender.com//api/payment/pesapal-callback?orderRef=${orderRef}`,
 			  ipn_notification_type: "POST",
 			};
 			const response = await axios.post(ipnurl, body, { headers });
@@ -67,8 +67,8 @@ export const createPesapalPaymentSession = async (req, res) => {
 			currency: "KES",
 			amount: totalAmount.toFixed(2),
 			description: "Order payment",
-			callback_url: `http://localhost:5173/api/payment/pesapal-callback?orderRef=${orderRef}`,
-			notification_id: "https://cybqa.pesapal.com/pesapalv3/api/URLSetup/RegisterIPN", // Optional
+			callback_url: `https://ecommerce-vtt3.onrender.com//api/payment/pesapal-callback?orderRef=${orderRef}`,
+			notification_id: myipn_id, // Optional
 			billing_address: {
 				email_address: req.user.email,
 				phone_number: req.user.phone || "0700000000",
