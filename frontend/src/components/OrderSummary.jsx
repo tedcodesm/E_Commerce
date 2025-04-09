@@ -34,6 +34,7 @@ const OrderSummary = () => {
 	// };
 
 	const handlePayment = async () => {
+		console.log("clicked the payment button")
 		try {
 			const res = await axios.post("/payments/create-pesapal-session", {
 				products: cart,
