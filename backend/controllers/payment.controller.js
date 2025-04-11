@@ -33,7 +33,8 @@ export const createPesapalPaymentSession = async (req, res) => {
 		}
 
 		const orderRef = crypto.randomUUID();
-		const callbackurl = `https://ecommerce-vtt3.onrender.com/api/payment/pesapal-callback?orderRef=${orderRef}`;
+		const ipnNotificationUrl = "https://ecommerce-vtt3.onrender.com/api/payment/pesapal-ipn";
+        const callbackurl = `https://ecommerce-vtt3.onrender.com/api/payment/pesapal-callback?orderRef=${orderRef}`;
 
 		const registerIPN = async (accessToken) => {
 			const headers = {
@@ -42,7 +43,7 @@ export const createPesapalPaymentSession = async (req, res) => {
 				Accept: "application/json",
 			};
 			const body = {
-				url: callbackurl,
+				url: ipnNotificationUrl,
 				ipn_notification_type: "POST",
 			};
 			const response = await axios.post(ipnurl, body, { headers });

@@ -26,6 +26,15 @@ app.use("/api/cart", cartRoutes)
 app.use("/api/coupons", couponRoutes)
 app.use("/api/payments", paymentRoutes)
 app.use("/api/analytics", analyticsRoutes)
+app.post("/api/payment/pesapal-ipn", (req, res) => {
+    console.log("📬 IPN Notification received:", req.body);
+    
+    // Handle the IPN here (e.g., update order status in DB)
+    // You can also validate the IPN by checking if it matches a signature or a known reference.
+ 
+    // Respond with a success message to acknowledge receipt of the IPN
+    res.status(200).send("IPN received and processed");
+ });
 
 if(process.env.NODE_ENV === "production"){
     app.use(express.static(path.join(__dirname,"/frontend/dist")));
