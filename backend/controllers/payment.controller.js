@@ -16,7 +16,7 @@ const consumerSecret = process.env.PESAPAL_CONSUMER_SECRET;
 
 
 export const createPesapalPaymentSession = async (req, res) => {
-	console.log("trying to do the payment")
+	console.log("trying to do the payment");
 	try {
 		const { products, couponCode } = req.body;
 
@@ -40,7 +40,7 @@ export const createPesapalPaymentSession = async (req, res) => {
 
 		const orderRef = crypto.randomUUID();
 		const ipnNotificationUrl = "https://ecommerce-vtt3.onrender.com/api/payment/pesapal-ipn";
-        const callbackurl = `https://ecommerce-vtt3.onrender.com/api/payment/pesapal-callback?orderRef=${orderRef}`;
+        const callbackurl = `https://ecommerce-vtt3.onrender.com/api/payments/pesapal-callback?orderRef=${orderRef}`;
 
        const getAccessToken = async (req, res) => {
 		console.log("Token has been requested");
