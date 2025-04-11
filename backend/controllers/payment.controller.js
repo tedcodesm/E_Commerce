@@ -128,19 +128,17 @@ export const createPesapalPaymentSession = async (req, res) => {
 
 export const handlePesapalCallback = async (req, res) => {
 	try {
-		const {
-			pesapal_transaction_tracking_id: trackingId,
-			pesapal_merchant_reference: merchantRef,
-		} = req.query;
+		const orderTrackingId = req.query.OrderTrackingId;
+		const orderRef = req.query.orderRef;
 
-		if (!trackingId || !merchantRef) {
+		if (!orderTrackingId || !orderRef) {
 			return res.status(400).send("Missing required query parameters");
 		}
 
 		const accessToken = await getAccessToken();
 
 		const result = await axios.get(
-			`https://pay.pesapal.com/v3/api/Transactions/GetTransactionStatus?orderTrackingId=${trackingId}`,
+			`https://pay.pesapal.com/v3/api/Transactions/GetTransactionStatus?orderTrackingId=${orderTrackingId}`,
 			{
 				headers: {
 					Authorization: `Bearer ${accessToken}`,
@@ -148,24 +146,15 @@ export const handlePesapalCallback = async (req, res) => {
 			}
 		);
 
-		console.log("Pesapal Transaction Status:", result.data);
-
 		if (result.data.status === "COMPLETED") {
-			// Optional: You can find the order in DB using merchantRef
-
-			// Deactivate coupon
-			// await Coupon.findOneAndUpdate(...)
-
-			// Create order
-			// await Order.create({ user, products, amount, ... })
-
 			return res.redirect(`${process.env.CLIENT_URL}/purchase-success`);
 		} else {
 			return res.redirect(`${process.env.CLIENT_URL}/purchase-cancel`);
 		}
 	} catch (error) {
-		console.error(" PesaPal Callback Error:", error.response?.data || error.message);
+		console.error("PesaPal Callback Error:", error.message);
 		res.status(500).send("Callback Error");
 	}
 };
+
 
