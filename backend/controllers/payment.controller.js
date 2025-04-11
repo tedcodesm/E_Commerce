@@ -8,6 +8,11 @@ dotenv.config();
 
 const ipnurl = process.env.PESAPAL_DEMO_URL;
 const url = process.env.PESAPAL_AUTH_URL;
+const consumerKey = process.env.PESAPAL_CONSUMER_KEY;
+// console.log("consumerKey" ,consumerKey)
+const consumerSecret = process.env.PESAPAL_CONSUMER_SECRET;
+// console.log("consumer secret",consumerSecret)
+
 
 
 export const createPesapalPaymentSession = async (req, res) => {
@@ -32,9 +37,33 @@ export const createPesapalPaymentSession = async (req, res) => {
 			}
 		}
 
+
 		const orderRef = crypto.randomUUID();
 		const ipnNotificationUrl = "https://ecommerce-vtt3.onrender.com/api/payment/pesapal-ipn";
         const callbackurl = `https://ecommerce-vtt3.onrender.com/api/payment/pesapal-callback?orderRef=${orderRef}`;
+
+       const getAccessToken = async (req, res) => {
+		console.log("Token has been requested");
+		try {
+		  const headers = {
+			"Content-Type": "application/json",
+			Accept: "application/json",
+		  };
+		  const body = {
+			consumer_key: consumerKey,
+			consumer_secret: consumerSecret,
+		  };
+		 
+		  //handle request
+		  const response = await axios.post(url, body, { headers });
+		 
+		  const accessToken = response.data.token;
+		  console.log("Here is your token",response.data.token);
+		  return response.data.token;
+		} catch (error) {
+		  console.log("error ocurred while getting token", error);
+		}
+		 };
 
 		const registerIPN = async (accessToken) => {
 			const headers = {
