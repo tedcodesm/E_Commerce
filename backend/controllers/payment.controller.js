@@ -40,7 +40,7 @@ export const createPesapalPaymentSession = async (req, res) => {
 
 		const orderRef = crypto.randomUUID();
 		const ipnNotificationUrl = "https://ecommerce-vtt3.onrender.com/api/payment/pesapal-ipn";
-        const callbackurl = `${process.env.CLIENT_URL}/purchase-success?orderRef=${orderRef}`;
+        const callbackurl = `https://ecommerce-vtt3.onrender.com/api/payment/pesapal-callback?orderRef=${orderRef}`;
 
        const getAccessToken = async (req, res) => {
 		console.log("Token has been requested");
