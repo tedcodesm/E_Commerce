@@ -26,7 +26,7 @@ app.use("/api/cart", cartRoutes)
 app.use("/api/coupons", couponRoutes)
 app.use("/api/payments", paymentRoutes)
 app.use("/api/analytics", analyticsRoutes)
-app.post("/api/payment/pesapal-ipn", (req, res) => {
+app.post("/api/payments/pesapal-ipn", (req, res) => {
     console.log("📬 IPN Notification received:", req.body);
     
     // Handle the IPN here (e.g., update order status in DB)
