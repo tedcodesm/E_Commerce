@@ -7,35 +7,38 @@ import Confetti from "react-confetti";
 
 const PurchaseSuccessPage = () => {
 	const [isProcessing, setIsProcessing] = useState(true);
-	const { clearCart } = useCartStore();
 	const [error, setError] = useState(null);
+	const [paymentInfo, setPaymentInfo] = useState(null);
+	const { clearCart } = useCartStore();
 
 	useEffect(() => {
-		const handleCheckoutSuccess = async (sessionId) => {
+		const fetchPaymentInfo = async () => {
+			const orderTrackingId = new URLSearchParams(window.location.search).get("orderTrackingId");
+
+			if (!orderTrackingId) {
+				setError("No order tracking ID found in the URL");
+				setIsProcessing(false);
+				return;
+			}
+
 			try {
-				await axios.post("/payments/checkout-success", {
-					sessionId,
-				});
+				const res = await axios.get(`/payments/status?orderTrackingId=${orderTrackingId}`);
+				setPaymentInfo(res.data);
 				clearCart();
 			} catch (error) {
-				console.log(error);
+				console.error("Error fetching payment info:", error);
+				setError("Failed to fetch payment details");
 			} finally {
 				setIsProcessing(false);
 			}
 		};
 
-		const sessionId = new URLSearchParams(window.location.search).get("session_id");
-		if (sessionId) {
-			handleCheckoutSuccess(sessionId);
-		} else {
-			setIsProcessing(false);
-			setError("No session ID found in the URL");
-		}
+		fetchPaymentInfo();
 	}, [clearCart]);
 
-	if (isProcessing) return "Processing...";
-
-	if (error) return `Error: ${error}`;
+	if (isProcessing) return <div className="text-white text-center mt-10">Processing your payment...</div>;
+	if (error) return <div className="text-red-500 text-center mt-10">Error: {error}</div>;
+	if (!paymentInfo) return <div className="text-white text-center mt-10">No payment info found.</div>;
 
 	return (
 		<div className='h-screen flex items-center justify-center px-4'>
@@ -60,32 +63,44 @@ const PurchaseSuccessPage = () => {
 					<p className='text-gray-300 text-center mb-2'>
 						Thank you for your order. {"We're"} processing it now.
 					</p>
-					<p className='text-emerald-400 text-center text-sm mb-6'>
-						Check your email for order details and updates.
-					</p>
+					
+
 					<div className='bg-gray-700 rounded-lg p-4 mb-6'>
+						
 						<div className='flex items-center justify-between mb-2'>
-							<span className='text-sm text-gray-400'>Order number</span>
-							<span className='text-sm font-semibold text-emerald-400'>#12345</span>
+							<span className='text-sm text-gray-400'>Confirmation Code</span>
+							<span className='text-sm font-semibold text-emerald-400'>
+								{paymentInfo.confirmationCode}
+							</span>
+						</div>
+						<div className='flex items-center justify-between mb-2'>
+							<span className='text-sm text-gray-400'>Payment Method</span>
+							<span className='text-sm font-semibold text-emerald-400'>
+								{paymentInfo.paymentMethod}
+							</span>
+						</div>
+						<div className='flex items-center justify-between mb-2'>
+							<span className='text-sm text-gray-400'>Phone Number</span>
+							<span className='text-sm font-semibold text-emerald-400'>
+								{paymentInfo.paymentAccount}
+							</span>
 						</div>
 						<div className='flex items-center justify-between'>
-							<span className='text-sm text-gray-400'>Estimated delivery</span>
-							<span className='text-sm font-semibold text-emerald-400'>3-5 business days</span>
+							<span className='text-sm text-gray-400'>Amount Paid</span>
+							<span className='text-sm font-semibold text-emerald-400'>
+								KES {paymentInfo.amount}
+							</span>
 						</div>
 					</div>
 
 					<div className='space-y-4'>
-						<button
-							className='w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4
-             rounded-lg transition duration-300 flex items-center justify-center'
-						>
+						<button className='w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300 flex items-center justify-center'>
 							<HandHeart className='mr-2' size={18} />
 							Thanks for trusting us!
 						</button>
 						<Link
 							to={"/"}
-							className='w-full bg-gray-700 hover:bg-gray-600 text-emerald-400 font-bold py-2 px-4 
-            rounded-lg transition duration-300 flex items-center justify-center'
+							className='w-full bg-gray-700 hover:bg-gray-600 text-emerald-400 font-bold py-2 px-4 rounded-lg transition duration-300 flex items-center justify-center'
 						>
 							Continue Shopping
 							<ArrowRight className='ml-2' size={18} />
@@ -96,4 +111,5 @@ const PurchaseSuccessPage = () => {
 		</div>
 	);
 };
+
 export default PurchaseSuccessPage;

@@ -13,148 +13,170 @@ const consumerKey = process.env.PESAPAL_CONSUMER_KEY;
 const consumerSecret = process.env.PESAPAL_CONSUMER_SECRET;
 // console.log("consumer secret",consumerSecret)
 
-
-
 export const createPesapalPaymentSession = async (req, res) => {
-	console.log("trying to do the payment");
-	try {
-		const { products, couponCode } = req.body;
+  console.log("trying to do the payment");
+  try {
+    const { products, couponCode } = req.body;
 
-		if (!Array.isArray(products) || products.length === 0) {
-			return res.status(400).json({ error: "Invalid or empty products array" });
-		}
+    if (!Array.isArray(products) || products.length === 0) {
+      return res.status(400).json({ error: "Invalid or empty products array" });
+    }
 
-		let totalAmount = 0;
-		products.forEach((product) => {
-			totalAmount += product.price * product.quantity;
-		});
+    let totalAmount = 0;
+    products.forEach((product) => {
+      totalAmount += product.price * product.quantity;
+    });
 
-		let coupon = null;
-		if (couponCode) {
-			coupon = await Coupon.findOne({ code: couponCode, userId: req.user._id, isActive: true });
-			if (coupon) {
-				totalAmount -= (totalAmount * coupon.discountPercentage) / 100;
-			}
-		}
+    let coupon = null;
+    if (couponCode) {
+      coupon = await Coupon.findOne({
+        code: couponCode,
+        userId: req.user._id,
+        isActive: true,
+      });
+      if (coupon) {
+        totalAmount -= (totalAmount * coupon.discountPercentage) / 100;
+      }
+    }
 
+    const orderRef = crypto.randomUUID();
+    // const ipnNotificationUrl ="https://1d87-41-209-60-99.ngrok-free.app/api/payment/pesapal-ipn";
+    const ipnNotificationUrl = "https://ecommerce-vtt3.onrender.com/api/payment/pesapal-ipn";
+    // const callbackurl = `https://1d87-41-209-60-99.ngrok-free.app/api/payments/pesapal-callback?orderRef=${orderRef}`;
+    const callbackurl = `https://ecommerce-vtt3.onrender.com/api/payments/pesapal-callback?orderRef=${orderRef}`
 
-		const orderRef = crypto.randomUUID();
-		const ipnNotificationUrl = "https://ecommerce-vtt3.onrender.com/api/payment/pesapal-ipn";
-		const callbackurl = `https://ecommerce-vtt3.onrender.com/api/payments/pesapal-callback?orderRef=${orderRef}`
+    const getAccessToken = async (req, res) => {
+      console.log("Token has been requested");
+      try {
+        const headers = {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        };
+        const body = {
+          consumer_key: consumerKey,
+          consumer_secret: consumerSecret,
+        };
 
-       const getAccessToken = async (req, res) => {
-		console.log("Token has been requested");
-		try {
-		  const headers = {
-			"Content-Type": "application/json",
-			Accept: "application/json",
-		  };
-		  const body = {
-			consumer_key: consumerKey,
-			consumer_secret: consumerSecret,
-		  };
-		 
-		  //handle request
-		  const response = await axios.post(url, body, { headers });
-		 
-		  const accessToken = response.data.token;
-		  console.log("Here is your token",response.data.token);
-		  return response.data.token;
-		} catch (error) {
-		  console.log("error ocurred while getting token", error);
-		}
-		 };
+        //handle request
+        const response = await axios.post(url, body, { headers });
 
-		const registerIPN = async (accessToken) => {
-			const headers = {
-				Authorization: `Bearer ${accessToken}`,
-				"Content-Type": "application/json",
-				Accept: "application/json",
-			};
-			const body = {
-				url: ipnNotificationUrl,
-				ipn_notification_type: "POST",
-			};
-			const response = await axios.post(ipnurl, body, { headers });
-			console.log("IPN registered successfully", response.data);
-			return response.data.ipn_id;
-		};
+        const accessToken = response.data.token;
+        console.log("Here is your token", response.data.token);
+        return response.data.token;
+      } catch (error) {
+        console.log("error ocurred while getting token", error);
+      }
+    };
 
-		const accessToken = await getAccessToken();
-		const myipn_id = await registerIPN(accessToken);
+    const registerIPN = async (accessToken) => {
+      const headers = {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      };
+      const body = {
+        url: ipnNotificationUrl,
+        ipn_notification_type: "POST",
+      };
+      const response = await axios.post(ipnurl, body, { headers });
+      console.log("IPN registered successfully", response.data);
+      return response.data.ipn_id;
+    };
 
-		const body = {
-			id: orderRef,
-			currency: "KES",
-			amount: totalAmount.toFixed(2),
-			description: "Order payment",
-			callback_url: callbackurl,
-			notification_id: myipn_id,
-			billing_address: {
-				email_address: req.user.email,
-				phone_number: req.user.phone || "0700000000",
-				first_name: req.user.name?.split(" ")[0] || "Customer",
-				last_name: req.user.name?.split(" ")[1] || " ",
-			},
-		};
+    const accessToken = await getAccessToken();
+    const myipn_id = await registerIPN(accessToken);
 
-		const headers = {
-			Authorization: `Bearer ${accessToken}`,
-			"Content-Type": "application/json",
-			Accept: "application/json",
-		};
+    const body = {
+      id: orderRef,
+      currency: "KES",
+      amount: totalAmount.toFixed(2),
+      description: "Order payment",
+      callback_url: callbackurl,
+      notification_id: myipn_id,
+      billing_address: {
+        email_address: req.user.email,
+        phone_number: req.user.phone || "0700000000",
+        first_name: req.user.name?.split(" ")[0] || "Customer",
+        last_name: req.user.name?.split(" ")[1] || " ",
+      },
+    };
 
-		const response = await axios.post(
-			"https://cybqa.pesapal.com/pesapalv3/api/Transactions/SubmitOrderRequest",
-			body,
-			{ headers }
-		);
+    const headers = {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    };
 
-		console.log("PesaPal Order Submitted:", response.data);
+    const response = await axios.post(
+      "https://cybqa.pesapal.com/pesapalv3/api/Transactions/SubmitOrderRequest",
+      body,
+      { headers }
+    );
 
-		if (totalAmount >= 20000) {
-			await createNewCoupon(req.user._id);
-		}
+    console.log("PesaPal Order Submitted:", response.data);
 
-		return res.status(200).json({
-			redirectUrl: response.data.redirect_url,
-			orderTrackingId: response.data.order_tracking_id,
-		});
-	} catch (error) {
-		console.error("PesaPal Payment Error:", error.response?.data || error.message);
-		res.status(500).json({ message: "Failed to initiate PesaPal payment", error: error.message });
-	}
+    if (totalAmount >= 20000) {
+      await createNewCoupon(req.user._id);
+    }
+
+    return res.status(200).json({
+      redirectUrl: response.data.redirect_url,
+      orderTrackingId: response.data.order_tracking_id,
+    });
+  } catch (error) {
+    console.error(
+      "PesaPal Payment Error:",
+      error.response?.data || error.message
+    );
+    res
+      .status(500)
+      .json({
+        message: "Failed to initiate PesaPal payment",
+        error: error.message,
+      });
+  }
 };
 
 export const handlePesapalCallback = async (req, res) => {
-	try {
-		const orderTrackingId = req.query.OrderTrackingId;
-		const orderRef = req.query.orderRef;
+  try {
+    const orderTrackingId = req.query.OrderTrackingId;
+    const orderRef = req.query.orderRef;
 
-		if (!orderTrackingId || !orderRef) {
-			return res.status(400).send("Missing required query parameters");
-		}
+    if (!orderTrackingId || !orderRef) {
+      return res.status(400).send("Missing required query parameters");
+    }
 
-		const accessToken = await getAccessToken();
-
-		const result = await axios.get(
-			`https://pay.pesapal.com/v3/api/Transactions/GetTransactionStatus?orderTrackingId=${orderTrackingId}`,
-			{
-				headers: {
-					Authorization: `Bearer ${accessToken}`,
-				},
-			}
-		);
-
-		if (result.data.status === "COMPLETED") {
-			return res.redirect(`${process.env.CLIENT_URL}/purchase-success`);
-		} else {
-			return res.redirect(`${process.env.CLIENT_URL}/purchase-cancel`);
-		}
-	} catch (error) {
-		console.error("PesaPal Callback Error:", error.message);
-		res.status(500).send("Callback Error");
-	}
+    const accessToken = await getAccessToken();
+	await  getTransactionStatus (accessToken,orderTrackingId,res);
+  } catch (error) {
+    console.error("PesaPal Callback Error:", error);
+    res.status(500).send("Callback Error");
+  }
 };
 
+const getTransactionStatus = async (accessToken, orderTrackingId, res) => {
+  try {
+    const result = await axios.get(
+      `https://cybqa.pesapal.com/pesapalv3/api/Transactions/GetTransactionStatus?orderTrackingId=${orderTrackingId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    console.log("Transaction result:", result.data);
+
+    const status = result.data.payment_status_description || result.data.status;
+
+    if (status && status.toLowerCase() === "completed") {
+      return res.redirect(`${process.env.CLIENT_URL}/purchase-success?orderTrackingId=${orderTrackingId}`);
+    } else {
+      return res.redirect(`${process.env.CLIENT_URL}/purchase-cancel`);
+    }
+  } catch (error) {
+    console.error("Error getting transaction status:", error.message);
+    return res.status(500).json({ message: "Error verifying transaction" });
+  }
+};
 
