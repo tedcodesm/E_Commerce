@@ -1,4 +1,5 @@
 import Product from "../models/product.model.js";
+import User from "../models/user.model.js";
 
 export const getCartProducts = async (req, res) => {
 	try {
@@ -18,29 +19,50 @@ export const getCartProducts = async (req, res) => {
 };
 
 export const addToCart = async (req, res) => {
-	try {
-		const { productId } = req.body;
-		const user = req.user;
+    try {
+        const { productId } = req.body;
+        const userId = req.user._id;
 
-		const existingItem = user.cartItems.find(
-			(item) => item.product.toString() === productId
-		);
+        // Fetch the product from the database
+        const product = await Product.findById(productId);
+        if (!product) {
+            return res.status(404).json({ message: "Product not found" });
+        }
 
-		if (existingItem) {
-			existingItem.quantity += 1;
-		} else {
-			user.cartItems.push({
-				product: productId,
-				quantity: 1,
-			});
-		}
+        // Find the user
+        const user = await User.findById(userId);
 
-		await user.save();
-		res.json(user.cartItems);
-	} catch (error) {
-		console.log("Error in addToCart controller", error.message);
-		res.status(500).json({ message: "Server error", error: error.message });
-	}
+        // Ensure user exists
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Check if the item already exists in the cart
+        const existingItem = user.cartItems.find(
+            (item) => item.product.toString() === productId
+        );
+
+        if (existingItem) {
+            existingItem.quantity += 1; // Increase quantity if it already exists
+        } else {
+            user.cartItems.push({
+                product: productId,  // Push new product to the cart
+                quantity: 1,
+            });
+        }
+
+        // Save user with updated cart
+        await user.save();
+
+        // Populate the product field
+        await user.populate("cartItems.product");
+
+        // Send updated cart data as response
+        res.json(user.cartItems);
+    } catch (error) {
+        console.log("Error in addToCart controller", error.message);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
 };
 
 
