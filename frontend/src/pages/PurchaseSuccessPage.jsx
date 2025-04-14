@@ -24,6 +24,7 @@ const PurchaseSuccessPage = () => {
 			try {
 				const res = await axios.get(`/payments/status?orderTrackingId=${orderTrackingId}`);
 				setPaymentInfo(res.data);
+				console.log("Next is to clear the cart",res.data)
 				clearCart();
 			} catch (error) {
 				console.error("Error fetching payment info:", error);
