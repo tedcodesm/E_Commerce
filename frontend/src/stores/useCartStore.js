@@ -1,6 +1,6 @@
 
 import { create } from "zustand";
-import axios from "../lib/axios.js";
+import axios from "../lib/axios";
 import { toast } from "react-hot-toast";
 
 export const useCartStore = create((set, get) => ({
@@ -44,20 +44,15 @@ export const useCartStore = create((set, get) => ({
 			toast.error(error.response.data.message || "An error occurred");
 		}
 	},
-	clearCart: () => {
+	clearCart: async () => {
 		set({ cart: [], coupon: null, total: 0, subtotal: 0 });
 	},
 	addToCart: async (product) => {
 		try {
 			await axios.post("/cart", { productId: product._id });
-            if (!product?._id) {
-				toast.error("Invalid product");
-				return;
-			  }else{
-				toast.success("Product added to cart");
+			toast.success("Product added to cart");
+		
 
-			  };
-			  
 			set((prevState) => {
 				const existingItem = prevState.cart.find((item) => item._id === product._id);
 				const newCart = existingItem
