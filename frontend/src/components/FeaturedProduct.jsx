@@ -72,8 +72,8 @@ const FeaturedProducts = ({ featuredProducts }) => {
 												ksh{product.price.toFixed(2)}
 											</p>
 											<button
-												onClick={() => handleAddToCart(product)}
-												className='w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2 px-4 rounded transition-colors duration-300 
+												onClick={handleAddToCart}
+                                                className='w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-2 px-4 rounded transition-colors duration-300 
 												flex items-center justify-center'
 											>
 												<ShoppingCart className='w-5 h-5 mr-2' />
