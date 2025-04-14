@@ -16,7 +16,7 @@ const SignUpPage = () => {
 
 	const handleSubmit = (e) => {
 		e.preventDefault();
-		console.log("clicked submit")
+		console.log("clicked submit",formData)
 		signup(formData);
 	};
 
