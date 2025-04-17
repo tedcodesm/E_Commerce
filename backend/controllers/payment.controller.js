@@ -3,6 +3,8 @@ import crypto from "crypto";
 import getAccessToken from "../lib/pesapal.js";
 import Coupon from "../models/coupon.model.js";
 import dotenv from "dotenv";
+import { saveTransactionToDB } from "../lib/savetransaction.js";
+import User from "../models/user.model.js";
 
 dotenv.config();
 
@@ -40,10 +42,10 @@ export const createPesapalPaymentSession = async (req, res) => {
     }
 
     const orderRef = crypto.randomUUID();
-    // const ipnNotificationUrl ="https://1d87-41-209-60-99.ngrok-free.app/api/payment/pesapal-ipn";
-    const ipnNotificationUrl = "https://ecommerce-vtt3.onrender.com/api/payment/pesapal-ipn";
-    // const callbackurl = `https://1d87-41-209-60-99.ngrok-free.app/api/payments/pesapal-callback?orderRef=${orderRef}`;
-    const callbackurl = `https://ecommerce-vtt3.onrender.com/api/payments/pesapal-callback?orderRef=${orderRef}`
+    const ipnNotificationUrl ="https://3a76-41-209-60-99.ngrok-free.app/api/payment/pesapal-ipn";
+    // const ipnNotificationUrl = "https://ecommerce-vtt3.onrender.com/api/payment/pesapal-ipn";
+    const callbackurl = `https://3a76-41-209-60-99.ngrok-free.app/api/payments/pesapal-callback?orderRef=${orderRef}&email=${req.user.email}`;
+    // const callbackurl = `https://ecommerce-vtt3.onrender.com/api/payments/pesapal-callback?orderRef=${orderRef}`
 
     const getAccessToken = async (req, res) => {
       console.log("Token has been requested");
@@ -114,8 +116,7 @@ export const createPesapalPaymentSession = async (req, res) => {
     );
 
     console.log("PesaPal Order Submitted:", response.data);
-
-    if (totalAmount >= 20000) {
+    if (totalAmount >= 2000) {
       await createNewCoupon(req.user._id);
     }
 
@@ -141,20 +142,22 @@ export const handlePesapalCallback = async (req, res) => {
   try {
     const orderTrackingId = req.query.OrderTrackingId;
     const orderRef = req.query.orderRef;
+    const email = req.query.email;
 
     if (!orderTrackingId || !orderRef) {
       return res.status(400).send("Missing required query parameters");
     }
 
     const accessToken = await getAccessToken();
-	await  getTransactionStatus (accessToken,orderTrackingId,res);
+  
+	await  getTransactionStatus (accessToken,orderTrackingId,res,email);
   } catch (error) {
     console.error("PesaPal Callback Error:", error);
     res.status(500).send("Callback Error");
   }
 };
 
-const getTransactionStatus = async (accessToken, orderTrackingId, res) => {
+const getTransactionStatus = async (accessToken, orderTrackingId, res ,email  ) => {
   try {
     const result = await axios.get(
       `https://cybqa.pesapal.com/pesapalv3/api/Transactions/GetTransactionStatus?orderTrackingId=${orderTrackingId}`,
@@ -165,9 +168,20 @@ const getTransactionStatus = async (accessToken, orderTrackingId, res) => {
       }
     );
 
-    console.log("Transaction result:", result.data);
+    console.log("transaction status",result.data)
 
     const status = result.data.payment_status_description || result.data.status;
+    await saveTransactionToDB({
+      orderTrackingId,
+      confirmationcode: result.data.confirmation_code,
+      status: result.data.payment_status_description,
+      paymentMethod: result.data.payment_method,
+      paymentaccount: result.data.payment_account,
+      amount: result.data.amount,
+      createdAt: result.data.created_at,
+      email,
+      
+    });
 
     if (status && status.toLowerCase() === "completed") {
       return res.redirect(`${process.env.CLIENT_URL}/purchase-success?orderTrackingId=${orderTrackingId}`);
