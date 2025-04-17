@@ -26,6 +26,8 @@ const PurchaseSuccessPage = () => {
 				setPaymentInfo(res.data);
 				console.log("Next is to clear the cart",res.data)
 				clearCart();
+				console.log("Cart cleared...")
+
 			} catch (error) {
 				console.error("Error fetching payment info:", error);
 				setError("Failed to fetch payment details");
